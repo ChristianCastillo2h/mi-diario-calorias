@@ -35,11 +35,6 @@
             font-size: 20px;
             font-weight: 700;
         }
-        header p {
-            margin: 4px 0 0 0;
-            font-size: 12px;
-            opacity: 0.8;
-        }
         main {
             padding: 16px;
             display: flex;
@@ -103,7 +98,7 @@
             font-size: 13px;
             outline: none;
         }
-        input[type="submit"] {
+        .btn-search {
             cursor: pointer;
             font-weight: 600;
             padding: 10px 20px;
@@ -114,7 +109,7 @@
             color: #ffffff;
             transition: background-color 0.2s;
         }
-        input[type="submit"]:hover {
+        .btn-search:hover {
             background-color: #047857;
         }
         #scanner-status {
@@ -170,10 +165,10 @@
             <!-- Búsqueda Manual -->
             <div class="white-card">
                 <h3>🔍 Buscar Alimento por Código de Barras</h3>
-                <form id="barcode-search-form" class="search-form" onsubmit="triggerManualSearch(event)">
-                    <input type="text" id="manual-barcode-input" placeholder="Escribe el código (Ej: 7622202309038)" required>
-                    <input type="submit" value="Buscar Producto">
-                </form>
+                <div class="search-form">
+                    <input type="text" id="manual-barcode-input" placeholder="Escribe el código (Ej: 7622202309038)">
+                    <button type="button" class="btn-search" onclick="triggerManualSearch()">Buscar Producto</button>
+                </div>
                 <div id="scanner-status">Listo para recibir tu primer código.</div>
             </div>
 
@@ -191,13 +186,17 @@
 
         document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-        function triggerManualSearch(event) {
-            event.preventDefault(); 
-            
+        function triggerManualSearch() {
             var inputElement = document.getElementById('manual-barcode-input');
             var barcodeValue = inputElement.value.trim();
-            
             var statusDiv = document.getElementById('scanner-status');
+            
+            if (barcodeValue === "") {
+                statusDiv.style.color = "#ef4444";
+                statusDiv.textContent = "Por favor, escribe un código de barras primero.";
+                return;
+            }
+            
             statusDiv.style.color = "#4f46e5";
             statusDiv.textContent = "Conectando con la base de datos pública...";
             
