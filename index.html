@@ -74,7 +74,6 @@
                 <div class="progress-bg">
                     <div id="calorie-bar" class="progress-bar"></div>
                 </div>
-                <!-- MEJORA 1: Botón para reiniciar el día -->
                 <button type="button" class="btn-danger-clear" onclick="reiniciarDia()">🗑️ Reiniciar Todo el Día</button>
             </div>
 
@@ -83,7 +82,8 @@
                 <h3>🔍 Buscar Alimento por Código de Barras</h3>
                 <div class="search-form">
                     <input type="text" id="manual-barcode-input" placeholder="Escribe el código (Ej: 7501000111107)">
-                    <button type="button" id="btn-submit-search" class="btn-search">Buscar Producto</button>
+                    <!-- CONEXIÓN INLINE ELIMINANDO FILTROS COMPLEJOS -->
+                    <button type="button" class="btn-search" onclick="executeSearch()">Buscar Producto</button>
                 </div>
                 <div id="scanner-status">Listo para recibir tu primer código mexicano.</div>
             </div>
@@ -100,9 +100,8 @@
         var dailyLog = JSON.parse(localStorage.getItem('myDailyCalorieLog')) || [];
         var calorieTarget = 2000;
 
-        // MEJORA 2: Base masiva de los productos y platillos más consumidos en México
+        // Base masiva precargada de productos y alimentos tradicionales de México
         var BD_LOCAL = {
-            // --- CÓDIGOS DE BARRAS COMERCIALES (MÉXICO) ---
             "7622202309038": { nombre: "Chocolate Milka (100g)", calorias: 530 },
             "7501055300075": { nombre: "Agua Ciel (600ml)", calorias: 0 },
             "7501055310890": { nombre: "Coca-Cola Original (600ml)", calorias: 240 },
@@ -118,32 +117,22 @@
             "7501008023530": { nombre: "Frijoles Isadora Bayos (130g)", calorias: 114 },
             "7501017006281": { nombre: "Galletas Marías Gamesa (8 pzas)", calorias: 140 },
             "7501017004652": { nombre: "Galletas Chokis Gamesa (pza)", calorias: 75 },
-            
-            // --- CÓDIGOS CORTOS PARA COMIDA TÍPICA Y NATURAL ---
             "1": { nombre: "Tortilla de Maíz (1 pieza)", calorias: 64 },
             "2": { nombre: "Tortilla de Harina (1 pieza)", calorias: 90 },
             "3": { nombre: "Taco de Pastor con todo (1 pza)", calorias: 150 },
             "4": { nombre: "Taco de Bistec (1 pza)", calorias: 130 },
             "5": { nombre: "Pechuga de Pollo Asada (100g)", calorias: 165 },
             "6": { nombre: "Arroz Rojo Cocinado (100g)", calorias: 140 },
-            "7": { nombre: "Huevo Entero Estrellado o Revuelto (pza)", calorias: 90 },
+            "7": { nombre: "Huevo Revuelto (pza)", calorias: 90 },
             "8": { nombre: "Frijoles de la Olla (1 taza)", calorias: 180 },
             "9": { nombre: "Aguacate (1/2 pieza)", calorias: 120 },
             "10": { nombre: "Queso Oaxaca (30g)", calorias: 85 },
             "11": { nombre: "Plátano (1 pieza)", calorias: 90 },
             "12": { nombre: "Manzana Roja (1 pieza)", calorias: 52 },
             "13": { nombre: "Bolillo sin migajón (1 pieza)", calorias: 125 },
-            "14": { nombre: "Chilaquiles Verdes Sencillos (plato)", calorias: 420 },
+            "14": { nombre: "Chilaquiles Verdes (plato)", calorias: 420 },
             "15": { nombre: "Quesadilla con Queso (1 pieza)", calorias: 170 }
         };
-
-        window.addEventListener('DOMContentLoaded', function() {
-            var btn = document.getElementById('btn-submit-search');
-            if (btn) {
-                btn.addEventListener('click', executeSearch);
-            }
-            render();
-        });
 
         function executeSearch() {
             var inputElement = document.getElementById('manual-barcode-input');
@@ -154,22 +143,21 @@
             
             if (barcodeValue === "") {
                 statusDiv.style.color = "#ef4444";
-                statusDiv.textContent = "Por favor, escribe un código de barras primero.";
+                statusDiv.textContent = "Por favor, escribe un código primero.";
                 return;
             }
             
             statusDiv.style.color = "#4f46e5";
-            statusDiv.textContent = "Buscando en la memoria local de alimentos...";
+            statusDiv.textContent = "Buscando...";
             
             if (BD_LOCAL[barcodeValue]) {
                 var product = BD_LOCAL[barcodeValue];
                 statusDiv.style.color = "#059669";
-                statusDiv.textContent = "¡Encontrado!: " + product.nombre + " (" + product.calorias + " kcal)";
+                statusDiv.textContent = "¡Encontrado!: " + product.nombre;
                 addFood(product.nombre, product.calorias);
                 inputElement.value = "";
             } else {
-                // Si pones un código mexicano nuevo, te permite guardarlo inmediatamente
-                askManualInput("Producto Mexicano Nuevo (" + barcodeValue + ")");
+                askManualInput("Producto Nuevo (" + barcodeValue + ")");
             }
         }
 
@@ -178,21 +166,23 @@
             statusDiv.style.color = "#d97706";
             statusDiv.textContent = "Introduce los datos manualmente:";
             
-var customName = prompt("Nombre del alimento o marca:", defaultName);
-if (customName === null || customName.trim() === "") {
-statusDiv.style.color = "#4b5563";
-statusDiv.textContent = "Búsqueda cancelada.";
-return;
-}
-var customKcalText = prompt("Calorías del alimento (por porción/100g):", "150");
-if (customKcalText === null) {
-statusDiv.style.color = "#4b5563";
-statusDiv.textContent = "Búsqueda cancelada.";
-return;
-}
-var customKcal = parseInt(customKcalText);
+            var customName = prompt("Nombre del alimento o marca:", defaultName);
+            if (customName === null || customName.trim() === "") {
+                statusDiv.style.color = "#4b5563";
+                statusDiv.textContent = "Búsqueda cancelada.";
+                return;
+            }
+            
+            var customKcalText = prompt("Calorías del alimento:", "150");
+            if (customKcalText === null) {
+                statusDiv.style.color = "#4b5563";
+                statusDiv.textContent = "Búsqueda cancelada.";
+                return;
+            }
+            
+            var customKcal = parseInt(customKcalText);
 if (isNaN(customKcal) || customKcal < 0) {
-alert("Por favor introduce un número válido de calorías.");
+alert("Por favor introduce un número válido.");
 return;
 }
 statusDiv.style.color = "#059669";
@@ -205,15 +195,14 @@ dailyLog.push({ id: Date.now(), foodName: name, foodKcal: kcal });
 localStorage.setItem('myDailyCalorieLog', JSON.stringify(dailyLog));
 render();
 }
-// Función para vaciar por completo el historial diario
 function reiniciarDia() {
-if (confirm("¿Estás seguro de que quieres borrar todos los alimentos registrados hoy? El contador volverá a 0.")) {
+if (confirm("¿Borrar todos los alimentos de hoy? El contador volverá a 0.")) {
 dailyLog = [];
 localStorage.removeItem('myDailyCalorieLog');
 render();
 var statusDiv = document.getElementById('scanner-status');
 statusDiv.style.color = "#1e1b4b";
-statusDiv.textContent = "Diario reiniciado. ¡Comienza un nuevo día!";
+statusDiv.textContent = "Diario reiniciado con éxito.";
 }
 }
 function render() {
@@ -249,3 +238,4 @@ dailyLog = dailyLog.filter(function(item) { return item.id !== id; });
 localStorage.setItem('myDailyCalorieLog', JSON.stringify(dailyLog));
 render();
 };
+render();
