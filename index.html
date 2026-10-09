@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Diario de Calorías - México</title>
     
-    <!-- Lógica de Control JavaScript al inicio -->
     <script>
         var dailyLog = JSON.parse(localStorage.getItem('myDailyCalorieLog')) || [];
         var calorieTarget = 2000;
@@ -43,7 +42,8 @@
             "15": { nombre: "Quesadilla con Queso (1 pieza)", calorias: 170 }
         };
 
-        function buscarCodigoMexicano() {
+        // Cambiamos el nombre a un disparador completamente nuevo e inédito
+        function accionBuscarAlimento() {
             var inputElement = document.getElementById('manual-barcode-input');
             var statusDiv = document.getElementById('scanner-status');
             
