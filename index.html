@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Diario de Calorías</title>
-    <!-- Librería HTML5-QRCode integrada por si deseas activar la cámara en el futuro -->
-    <script src="https://unpkg.com"></script>
     
     <style>
         body {
@@ -261,8 +259,8 @@
                                 '<p>Porción base: 100g</p>' +
                             '</div>' +
                             '<div class="log-actions">' +
-'' + item.foodKcal + ' kcal' +
-'×' +
+                                '<span class="log-kcal">' + item.foodKcal + ' kcal</span>' +
+                                '<button onclick="deleteLogItem(\'' + item.id + '\')" class="btn-delete">&times;</button>' +
 '' +
 '';
 }).join('');
