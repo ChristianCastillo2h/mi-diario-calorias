@@ -5,6 +5,123 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Diario de Calorías</title>
     
+    <!-- Lógica de Control JavaScript (Cargada al inicio para evitar errores de referencia) -->
+    <script>
+        var dailyLog = JSON.parse(localStorage.getItem('myDailyCalorieLog')) || [];
+        var calorieTarget = 2000;
+
+        function triggerManualSearch() {
+            var inputElement = document.getElementById('manual-barcode-input');
+            var statusDiv = document.getElementById('scanner-status');
+            
+            if (!inputElement) return;
+            var barcodeValue = inputElement.value.trim();
+            
+            if (barcodeValue === "") {
+                statusDiv.style.color = "#ef4444";
+                statusDiv.textContent = "Por favor, escribe un código de barras primero.";
+                return;
+            }
+            
+            statusDiv.style.color = "#4f46e5";
+            statusDiv.textContent = "Conectando con la base de datos pública...";
+            
+            // Petición web directa a la API de Open Food Facts
+            fetch("https://openfoodfacts.org" + barcodeValue + ".json")
+                .then(function(response) { 
+                    if (!response.ok) throw new Error("Error de red");
+                    return response.json(); 
+                })
+                .then(function(data) {
+                    if (data.status === 1 && data.product) {
+                        var product = data.product;
+                        var name = product.product_name_es || product.product_name || "Producto Sin Nombre";
+                        var kcal = product.nutriments['energy-kcal_100g'] || 0;
+                        
+                        if (!kcal && product.nutriments['energy_100g']) {
+                            kcal = Math.round(product.nutriments['energy_100g'] / 4.184);
+                        }
+
+                        if (kcal > 0) {
+                            statusDiv.style.color = "#059669";
+                            statusDiv.textContent = "¡Agregado!: " + name + " (" + kcal + " kcal)";
+                            addFood(name, kcal);
+                            inputElement.value = "";
+                        } else {
+                            statusDiv.style.color = "#d97706";
+                            statusDiv.textContent = "Se encontró '" + name + "', pero no detalla calorías.";
+                        }
+                    } else {
+                        statusDiv.style.color = "#ef4444";
+                        statusDiv.textContent = "El código no existe en la base de datos.";
+                    }
+                })
+                .catch(function(error) {
+                    statusDiv.style.color = "#ef4444";
+                    statusDiv.textContent = "Error al intentar obtener los datos del servidor.";
+                    console.error(error);
+                });
+        }
+
+        function addFood(name, kcal) {
+            dailyLog.push({ id: Date.now().toString(), foodName: name, foodKcal: kcal, amount: 100 });
+            localStorage.setItem('myDailyCalorieLog', JSON.stringify(dailyLog));
+            render();
+        }
+
+        function render() {
+            var todayStr = new Date().toDateString();
+            var todayLogs = dailyLog.filter(function(item) {
+                // Validación robusta de fechas usando marcas de tiempo nativas
+                var timestamp = parseInt(item.id);
+                if (isNaN(timestamp)) return false;
+                return new Date(timestamp).toDateString() === todayStr;
+            });
+
+            var list = document.getElementById('daily-log-list');
+            var total = 0;
+            
+            if (!list) return;
+
+            if (todayLogs.length === 0) {
+                list.innerHTML = '<p class="empty-text">No has registrado alimentos hoy.</p>';
+            } else {
+                list.innerHTML = todayLogs.map(function(item) {
+                    total += item.foodKcal;
+                    return '<div class="log-item">' +
+                            '<div class="log-info">' +
+                                '<h4>' + item.foodName + '</h4>' +
+                                '<p>Porción base: 100g</p>' +
+                            '</div>' +
+                            '<div class="log-actions">' +
+                                '<span class="log-kcal">' + item.foodKcal + ' kcal</span>' +
+                                '<button onclick="deleteLogItem(\'' + item.id + '\')" class="btn-delete">&times;</button>' +
+                            '</div>' +
+                        '</div>';
+                }).join('');
+            }
+            
+            document.getElementById('total-calories').textContent = total;
+            
+            var progressPercent = Math.min((total / calorieTarget) * 100, 100);
+            var bar = document.getElementById('calorie-bar');
+            if (bar) {
+                bar.style.width = progressPercent + "%";
+                bar.style.backgroundColor = total > calorieTarget ? "#ef4444" : "#4f46e5";
+            }
+        }
+
+        window.deleteLogItem = function(id) {
+            dailyLog = dailyLog.filter(function(item) { return item.id !== id; });
+            localStorage.setItem('myDailyCalorieLog', JSON.stringify(dailyLog));
+            render();
+        };
+
+        // Ejecutar render inicial en cuanto cargue el DOM
+        window.addEventListener('DOMContentLoaded', render);
+    </script>
+
+    <!-- Estilos de Diseño Móvil Organizados -->
     <style>
         body {
             background-color: #f3f4f6;
@@ -146,133 +263,6 @@
     <div class="app-container">
         <header>
             <h1>🍎 Diario Nutricional Individual</h1>
-            <p id="current-date"></p>
         </header>
 
         <main>
-            <!-- Resumen Diario -->
-            <div class="card">
-                <h2>Calorías de Hoy</h2>
-                <div class="calorie-flex">
-                    <span id="total-calories" class="big-calories">0</span>
-                    <span style="font-size:14px; color:#6b7280;">de <strong>2000</strong> kcal</span>
-                </div>
-                <div class="progress-bg">
-                    <div id="calorie-bar" class="progress-bar"></div>
-                </div>
-            </div>
-
-            <!-- Búsqueda Manual -->
-            <div class="white-card">
-                <h3>🔍 Buscar Alimento por Código de Barras</h3>
-                <div class="search-form">
-                    <input type="text" id="manual-barcode-input" placeholder="Escribe el código (Ej: 7622202309038)">
-                    <button type="button" class="btn-search" onclick="triggerManualSearch()">Buscar Producto</button>
-                </div>
-                <div id="scanner-status">Listo para recibir tu primer código.</div>
-            </div>
-
-            <!-- Listado consumido -->
-            <div>
-                <div class="section-title">🍽️ Alimentos Consumidos Hoy</div>
-                <div id="daily-log-list"></div>
-            </div>
-        </main>
-    </div>
-
-    <script>
-        var dailyLog = JSON.parse(localStorage.getItem('myDailyCalorieLog')) || [];
-        var calorieTarget = 2000;
-
-        document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-        function triggerManualSearch() {
-            var inputElement = document.getElementById('manual-barcode-input');
-            var barcodeValue = inputElement.value.trim();
-            var statusDiv = document.getElementById('scanner-status');
-            
-            if (barcodeValue === "") {
-                statusDiv.style.color = "#ef4444";
-                statusDiv.textContent = "Por favor, escribe un código de barras primero.";
-                return;
-            }
-            
-            statusDiv.style.color = "#4f46e5";
-            statusDiv.textContent = "Conectando con la base de datos pública...";
-            
-            fetch("https://openfoodfacts.org" + barcodeValue + ".json")
-                .then(function(response) { return response.json(); })
-                .then(function(data) {
-                    if (data.status === 1 && data.product) {
-                        var name = data.product.product_name_es || data.product.product_name || "Producto Sin Nombre";
-                        var kcal = data.product.nutriments['energy-kcal_100g'] || 0;
-                        
-                        if (!kcal && data.product.nutriments['energy_100g']) {
-                            kcal = Math.round(data.product.nutriments['energy_100g'] / 4.184);
-                        }
-
-                        if (kcal > 0) {
-                            statusDiv.style.color = "#059669";
-                            statusDiv.textContent = "¡Agregado!: " + name + " (" + kcal + " kcal)";
-                            addFood(name, kcal);
-                            document.getElementById('manual-barcode-input').value = "";
-                        } else {
-                            statusDiv.style.color = "#d97706";
-                            statusDiv.textContent = "Se encontró '" + name + "', pero no detalla calorías.";
-                        }
-                    } else {
-                        statusDiv.style.color = "#ef4444";
-                        statusDiv.textContent = "El código no existe en la base de datos.";
-                    }
-                })
-                .catch(function(error) {
-                    statusDiv.style.color = "#ef4444";
-                    statusDiv.textContent = "Error al intentar obtener los datos del servidor.";
-                    console.error(error);
-                });
-        }
-
-        function addFood(name, kcal) {
-            dailyLog.push({ id: Date.now().toString(), foodName: name, foodKcal: kcal, amount: 100 });
-            localStorage.setItem('myDailyCalorieLog', JSON.stringify(dailyLog));
-            render();
-        }
-
-        function render() {
-            var todayStr = new Date().toDateString();
-            var todayLogs = dailyLog.filter(function(item) {
-                return new Date(parseInt(item.id)).toDateString() === todayStr;
-            });
-
-            var list = document.getElementById('daily-log-list');
-            var total = 0;
-            
-            if (todayLogs.length === 0) {
-                list.innerHTML = '<p class="empty-text">No has registrado alimentos hoy.</p>';
-            } else {
-                list.innerHTML = todayLogs.map(function(item) {
-                    total += item.foodKcal;
-                    return '<div class="log-item">' +
-                            '<div class="log-info">' +
-                                '<h4>' + item.foodName + '</h4>' +
-                                '<p>Porción base: 100g</p>' +
-                            '</div>' +
-                            '<div class="log-actions">' +
-                                '<span class="log-kcal">' + item.foodKcal + ' kcal</span>' +
-                                '<button onclick="deleteLogItem(\'' + item.id + '\')" class="btn-delete">&times;</button>' +
-'' +
-'';
-}).join('');
-}
-document.getElementById('total-calories').textContent = total;
-var progressPercent = Math.min((total / calorieTarget) * 100, 100);
-var bar = document.getElementById('calorie-bar');
-bar.style.width = progressPercent + "%";
-bar.style.backgroundColor = total > calorieTarget ? "#ef4444" : "#4f46e5";
-}
-window.deleteLogItem = function(id) {
-dailyLog = dailyLog.filter(function(item) { return item.id !== id; });
-localStorage.setItem('myDailyCalorieLog', JSON.stringify(dailyLog));
-render();
-};
-render();
