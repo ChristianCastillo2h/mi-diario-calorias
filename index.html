@@ -5,11 +5,193 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Diario de Calorías</title>
     
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+        .app-container {
+            width: 100%;
+            max-width: 450px;
+            background-color: #ffffff;
+            min-height: 100vh;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background-color: #4f46e5;
+            color: #ffffff;
+            padding: 16px;
+            text-align: center;
+        }
+        header h1 { 
+            margin: 0; 
+            font-size: 20px; 
+            font-weight: 700; 
+        }
+        main { 
+            padding: 16px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 24px; 
+        }
+        .card { 
+            background-color: #f9fafb; 
+            padding: 16px; 
+            border-radius: 12px; 
+            border: 1px solid #e5e7eb; 
+        }
+        .white-card { 
+            background-color: #ffffff; 
+            padding: 16px; 
+            border-radius: 12px; 
+            border: 1px solid #e5e7eb; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .card h2, .white-card h3, .section-title { 
+            margin: 0 0 8px 0; 
+            font-size: 14px; 
+            font-weight: 700; 
+            color: #374151; 
+            text-transform: uppercase; 
+        }
+        .calorie-flex { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end; 
+            margin-bottom: 8px; 
+        }
+        .big-calories { 
+            font-size: 32px; 
+            font-weight: 900; 
+            color: #4f46e5; 
+        }
+        .progress-bg { 
+            width: 100%; 
+            background-color: #e5e7eb; 
+            height: 12px; 
+            border-radius: 9999px; 
+            overflow: hidden; 
+        }
+        .progress-bar { 
+            height: 12px; 
+            border-radius: 9999px; 
+            width: 0%; 
+            background-color: #4f46e5; 
+            transition: width 0.3s ease; 
+        }
+        .search-form { 
+            display: flex; 
+            gap: 8px; 
+            margin-top: 12px; 
+        }
+        input[type="text"] { 
+            flex: 1; 
+            border: 1px solid #d1d5db; 
+            border-radius: 8px; 
+            padding: 10px; 
+            font-size: 13px; 
+            outline: none; 
+        }
+        .btn-search { 
+            cursor: pointer; 
+            font-weight: 600; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            font-size: 13px; 
+            border: none; 
+            background-color: #059669; 
+            color: #ffffff; 
+        }
+        .btn-search:hover { 
+            background-color: #047857; 
+        }
+        #scanner-status { 
+            text-align: center; 
+            margin-top: 12px; 
+            font-size: 13px; 
+            font-weight: 600; 
+            color: #1e1b4b; 
+            background-color: #e0e7ff; 
+            padding: 10px; 
+            border-radius: 6px; 
+        }
+        .log-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background-color: rgba(79, 70, 229, 0.05); 
+            border: 1px solid rgba(79, 70, 229, 0.1); 
+            padding: 12px; 
+            border-radius: 12px; 
+            margin-bottom: 8px; 
+        }
+        .log-info h4 { margin: 0; font-size: 13px; color: #1f2937; }
+        .log-info p { margin: 2px 0 0 0; font-size: 10px; color: #9ca3af; }
+        .log-actions { display: flex; align-items: center; gap: 12px; }
+        .log-kcal { font-size: 13px; font-weight: 800; color: #374151; }
+        .btn-delete { background: none; border: none; color: #9ca3af; font-size: 18px; cursor: pointer; padding: 0 4px; }
+        .btn-delete:hover { color: #ef4444; }
+        .empty-text { font-size: 12px; color: #9ca3af; text-align: center; padding: 16px 0; border: 1px dashed #d1d5db; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1>🍎 Diario Nutricional Individual</h1>
+        </header>
+
+        <main>
+            <!-- Resumen Diario -->
+            <div class="card">
+                <h2>Calorías de Hoy</h2>
+                <div class="calorie-flex">
+                    <span id="total-calories" class="big-calories">0</span>
+                    <span style="font-size:14px; color:#6b7280;">de 2000 kcal</span>
+                </div>
+                <div class="progress-bg">
+                    <div id="calorie-bar" class="progress-bar"></div>
+                </div>
+            </div>
+
+            <!-- Búsqueda Manual -->
+            <div class="white-card">
+                <h3>🔍 Buscar Alimento por Código de Barras</h3>
+                <div class="search-form">
+                    <input type="text" id="manual-barcode-input" placeholder="Escribe el código (Ej: 7622202309038)">
+                    <button type="button" id="btn-submit-search" class="btn-search">Buscar Producto</button>
+                </div>
+                <div id="scanner-status">Listo para recibir tu primer código.</div>
+            </div>
+
+            <!-- Listado consumido -->
+            <div>
+                <div class="section-title">🍽️ Alimentos Consumidos Hoy</div>
+                <div id="daily-log-list"></div>
+            </div>
+        </main>
+    </div>
+
     <script>
         var dailyLog = JSON.parse(localStorage.getItem('myDailyCalorieLog')) || [];
         var calorieTarget = 2000;
 
-        function triggerManualSearch() {
+        window.addEventListener('DOMContentLoaded', function() {
+            var btn = document.getElementById('btn-submit-search');
+            if (btn) {
+                btn.addEventListener('click', executeSearch);
+            }
+            render();
+        });
+
+        function executeSearch() {
             var inputElement = document.getElementById('manual-barcode-input');
             var statusDiv = document.getElementById('scanner-status');
             
@@ -48,19 +230,18 @@
                             addFood(name, kcal);
                             inputElement.value = "";
                         } else {
-                            askManualInput(name);
+                            askManualInput(name, barcodeValue);
                         }
                     } else {
-                        askManualInput("Producto Nuevo (" + barcodeValue + ")");
+                        askManualInput("Producto Nuevo (" + barcodeValue + ")", barcodeValue);
                     }
                 })
                 .catch(function(error) {
-                    console.log("Activando respaldo manual por restricción de red.");
-                    askManualInput("Código: " + barcodeValue);
+                    askManualInput("Código: " + barcodeValue, barcodeValue);
                 });
         }
 
-        function askManualInput(defaultName) {
+        function askManualInput(defaultName, barcode) {
             var statusDiv = document.getElementById('scanner-status');
             statusDiv.style.color = "#d97706";
             statusDiv.textContent = "Introduce los datos manualmente:";
@@ -92,119 +273,47 @@
         }
 
         function addFood(name, kcal) {
-            dailyLog.push({ id: Date.now().toString(), foodName: name, foodKcal: kcal, amount: 100 });
-            localStorage.setItem('myDailyCalorieLog', JSON.stringify(dailyLog));
-            render();
-        }
-
-        function render() {
-            var todayStr = new Date().toDateString();
-            var todayLogs = dailyLog.filter(function(item) {
-                var timestamp = parseInt(item.id);
-                if (isNaN(timestamp)) return false;
-                return new Date(timestamp).toDateString() === todayStr;
-            });
-
-            var list = document.getElementById('daily-log-list');
-            var total = 0;
-            
-            if (!list) return;
-
-            if (todayLogs.length === 0) {
-                list.innerHTML = '<p class="empty-text">No has registrado alimentos hoy.</p>';
-            } else {
-                list.innerHTML = todayLogs.map(function(item) {
-                    total += item.foodKcal;
-                    return '<div class="log-item">' +
-                            '<div class="log-info">' +
-                                '<h4>' + item.foodName + '</h4>' +
-                                '<p>Porción base: 100g</p>' +
-                            '</div>' +
-                            '<div class="log-actions">' +
-                                '<span class="log-kcal">' + item.foodKcal + ' kcal</span>' +
-                                '<button onclick="deleteLogItem(\'' + item.id + '\')" class="btn-delete">&times;</button>' +
-                            '</div>' +
-                        '</div>';
-                }).join('');
-            }
-            
-            document.getElementById('total-calories').textContent = total;
-            
-            var progressPercent = Math.min((total / calorieTarget) * 100, 100);
-            var bar = document.getElementById('calorie-bar');
-            if (bar) {
-                bar.style.width = progressPercent + "%";
-                bar.style.backgroundColor = total > calorieTarget ? "#ef4444" : "#4f46e5";
-            }
-        }
-
-        window.deleteLogItem = function(id) {
-            dailyLog = dailyLog.filter(function(item) { return item.id !== id; });
-            localStorage.setItem('myDailyCalorieLog', JSON.stringify(dailyLog));
-            render();
-        };
-
-        window.addEventListener('DOMContentLoaded', render);
-    </script>
-
-    <style>
-        body {
-            background-color: #f3f4f6;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-        }
-        .app-container {
-            width: 100%;
-            max-width: 450px;
-            background-color: #ffffff;
-            min-height: 100vh;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-        }
-        header {
-            background-color: #4f46e5;
-            color: #ffffff;
-            padding: 16px;
-            text-align: center;
-        }
-        header h1 { margin: 0; font-size: 20px; font-weight: 700; }
-        main { padding: 16px; display: flex; flex-direction: column; gap: 24px; }
-        .card { background-color: #f9fafb; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; }
-        .white-card { background-color: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; }
-        .card h2, .white-card h3, .section-title { margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: #374151; text-transform: uppercase; }
-        .calorie-flex { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; }
-        .big-calories { font-size: 32px; font-weight: 900; color: #4f46e5; }
-        .progress-bg { width: 100%; background-color: #e5e7eb; height: 12px; border-radius: 9999px; overflow: hidden; }
-        .progress-bar { height: 12px; border-radius: 9999px; width: 0%; background-color: #4f46e5; transition: width 0.3s ease; }
-        .search-form { display: flex; gap: 8px; margin-top: 12px; }
-        input[type="text"] { flex: 1; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px; font-size: 13px; outline: none; }
-        .btn-search { cursor: pointer; font-weight: 600; padding: 10px 20px; border-radius: 8px; font-size: 13px; border: none; background-color: #059669; color: #ffffff; }
-        .btn-search:hover { background-color: #047857; }
-        #scanner-status { text-align: center; margin-top: 12px; font-size: 13px; font-weight: 600; color: #1e1b4b; background-color: #e0e7ff; padding: 10px; border-radius: 6px; }
-        .log-item { display: flex; justify-content: space-between; align-items: center; background-color: rgba(79, 70, 229, 0.05); border: 1px solid rgba(79, 70, 229, 0.1); padding: 12px; border-radius: 12px; margin-bottom: 8px; }
-        .log-info h4 { margin: 0; font-size: 13px; color: #1f2937; }
-        .log-info p { margin: 2px 0 0 0; font-size: 10px; color: #9ca3af; }
-        .log-actions { display: flex; align-items: center; gap: 12px; }
-        .log-kcal { font-size: 13px; font-weight: 800; color: #374151; }
-        .btn-delete { background: none; border: none; color: #9ca3af; font-size: 18px; cursor: pointer; padding: 0 4px; }
-        .btn-delete:hover { color: #ef4444; }
-        .empty-text { font-size: 12px; color: #9ca3af; text-align: center; padding: 16px 0; border: 1px dashed #d1d5db; border-radius: 8px; }
-    </style>
-</head>
-<body>
-
-    <div class="app-container">
-        <header>
-            <h1>🍎 Diario Nutricional Individual</h1>
-        </header>
-
-        <main>
-            <div class="card">
-                <h2>Calorías de Hoy</h2>
-                <div class="calorie-flex">
-                    <span id="total-calories" class="big-calories">0</span>
+dailyLog.push({ id: Date.now().toString(), foodName: name, foodKcal: kcal, amount: 100 });
+localStorage.setItem('myDailyCalorieLog', JSON.stringify(dailyLog));
+render();
+}
+function render() {
+var todayStr = new Date().toDateString();
+var todayLogs = dailyLog.filter(function(item) {
+var timestamp = parseInt(item.id);
+if (isNaN(timestamp)) return false;
+return new Date(timestamp).toDateString() === todayStr;
+});
+var list = document.getElementById('daily-log-list');
+var total = 0;
+if (!list) return;
+if (todayLogs.length === 0) {
+list.innerHTML = 'No has registrado alimentos hoy.';
+} else {
+list.innerHTML = todayLogs.map(function(item) {
+total += item.foodKcal;
+return '' +
+'' +
+'' + item.foodName + '' +
+'Porción base: 100g' +
+'' +
+'' +
+'' + item.foodKcal + ' kcal' +
+'×' +
+'' +
+'';
+}).join('');
+}
+document.getElementById('total-calories').textContent = total;
+var progressPercent = Math.min((total / calorieTarget) * 100, 100);
+var bar = document.getElementById('calorie-bar');
+if (bar) {
+bar.style.width = progressPercent + "%";
+bar.style.backgroundColor = total > calorieTarget ? "#ef4444" : "#4f46e5";
+}
+}
+window.deleteLogItem = function(id) {
+dailyLog = dailyLog.filter(function(item) { return item.id !== id; });
+localStorage.setItem('myDailyCalorieLog', JSON.stringify(dailyLog));
+render();
+};
