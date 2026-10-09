@@ -183,6 +183,15 @@
         var dailyLog = JSON.parse(localStorage.getItem('myDailyCalorieLog')) || [];
         var calorieTarget = 2000;
 
+        // Base de datos de alimentos precargada en la memoria local interna
+        var LOCAL_FOOD_DATABASE = {
+            "7622202309038": { name: "Chocolate Milka", kcal: 530 },
+            "5449000000996": { name: "Coca-Cola Original (355ml)", kcal: 140 },
+            "7501055300075": { name: "Agua Embotellada", kcal: 0 },
+            "0000000000001": { name: "Plátano (1 pieza)", kcal: 89 },
+            "0000000000002": { name: "Manzana Roja", kcal: 52 }
+        };
+
         window.addEventListener('DOMContentLoaded', function() {
             var btn = document.getElementById('btn-submit-search');
             if (btn) {
@@ -205,55 +214,34 @@
             }
             
             statusDiv.style.color = "#4f46e5";
-            statusDiv.textContent = "Buscando en la base de datos pública...";
+            statusDiv.textContent = "Buscando en la memoria interna...";
             
-            var targetUrl = "https://openfoodfacts.org" + barcodeValue + ".json";
-            
-            fetch(targetUrl)
-                .then(function(response) {
-                    if (!response.ok) throw new Error("Error de red");
-                    return response.json();
-                })
-                .then(function(data) {
-                    if (data.status === 1 && data.product) {
-                        var product = data.product;
-                        var name = product.product_name_es || product.product_name || "Producto Código " + barcodeValue;
-                        var kcal = product.nutriments['energy-kcal_100g'] || 0;
-                        
-                        if (!kcal && product.nutriments['energy_100g']) {
-                            kcal = Math.round(product.nutriments['energy_100g'] / 4.184);
-                        }
-
-                        if (kcal > 0) {
-                            statusDiv.style.color = "#059669";
-                            statusDiv.textContent = "¡Agregado!: " + name + " (" + kcal + " kcal)";
-                            addFood(name, kcal);
-                            inputElement.value = "";
-                        } else {
-                            askManualInput(name, barcodeValue);
-                        }
-                    } else {
-                        askManualInput("Producto Nuevo (" + barcodeValue + ")", barcodeValue);
-                    }
-                })
-                .catch(function(error) {
-                    askManualInput("Código: " + barcodeValue, barcodeValue);
-                });
+            // Verificamos si el código de barras existe de forma local e inmediata
+            if (LOCAL_FOOD_DATABASE[barcodeValue]) {
+                var product = LOCAL_FOOD_DATABASE[barcodeValue];
+                statusDiv.style.color = "#059669";
+                statusDiv.textContent = "¡Encontrado!: " + product.name + " (" + product.kcal + " kcal)";
+                addFood(product.name, product.kcal);
+                inputElement.value = "";
+            } else {
+                // Si el código no está precargado, abrimos la ventana interactiva al instante sin congelar la app
+                askManualInput("Producto Código " + barcodeValue);
+            }
         }
 
-        function askManualInput(defaultName, barcode) {
+        function askManualInput(defaultName) {
             var statusDiv = document.getElementById('scanner-status');
             statusDiv.style.color = "#d97706";
             statusDiv.textContent = "Introduce los datos manualmente:";
             
-            var customName = prompt("Confirmar nombre del producto:", defaultName);
-            if (customName === null) {
+            var customName = prompt("Nombre del producto nuevo:", defaultName);
+            if (customName === null || customName.trim() === "") {
                 statusDiv.style.color = "#4b5563";
                 statusDiv.textContent = "Búsqueda cancelada.";
                 return;
             }
             
-            var customKcalText = prompt("Calorías por cada 100g / porción:", "150");
+            var customKcalText = prompt("Calorías del producto:", "150");
             if (customKcalText === null) {
                 statusDiv.style.color = "#4b5563";
                 statusDiv.textContent = "Búsqueda cancelada.";
@@ -267,21 +255,22 @@
             }
             
             statusDiv.style.color = "#059669";
-            statusDiv.textContent = "¡Agregado manualmente!: " + customName;
+            statusDiv.textContent = "¡Agregado con éxito!: " + customName;
             addFood(customName, customKcal);
             document.getElementById('manual-barcode-input').value = "";
         }
 
         function addFood(name, kcal) {
-dailyLog.push({ id: Date.now().toString(), foodName: name, foodKcal: kcal, amount: 100 });
-localStorage.setItem('myDailyCalorieLog', JSON.stringify(dailyLog));
-render();
-}
-function render() {
-var todayStr = new Date().toDateString();
-var todayLogs = dailyLog.filter(function(item) {
-var timestamp = parseInt(item.id);
-if (isNaN(timestamp)) return false;
+            dailyLog.push({ id: Date.now().toString(), foodName: name, foodKcal: kcal, amount: 100 });
+            localStorage.setItem('myDailyCalorieLog', JSON.stringify(dailyLog));
+            render();
+        }
+
+        function render() {
+            var todayStr = new Date().toDateString();
+            var todayLogs = dailyLog.filter(function(item) {
+                var timestamp = parseInt(item.id);
+                if (isNaN(timestamp)) return false;
 return new Date(timestamp).toDateString() === todayStr;
 });
 var list = document.getElementById('daily-log-list');
